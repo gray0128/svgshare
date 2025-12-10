@@ -51,16 +51,16 @@ class SvgViewer extends HTMLElement {
             pointer-events: none; /* Let clicks pass to container for panning */
         }
         .controls {
-            position: absolute;
+            position: fixed;
             bottom: 20px;
             right: 20px;
             display: flex;
             gap: 8px;
-            background: rgba(0,0,0,0.5);
-            padding: 4px;
+            background: rgba(0,0,0,0.7);
+            padding: 8px;
             border-radius: 8px;
             backdrop-filter: blur(4px);
-            z-index: 10;
+            z-index: 10000;
         }
         button {
             background: rgba(255,255,255,0.1);

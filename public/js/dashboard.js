@@ -199,7 +199,10 @@ window.toggleShare = async (id, currentStatus, e) => {
 window.copyLink = (url, e) => {
     e.stopPropagation();
     navigator.clipboard.writeText(url);
-    alert('Link copied!');
+    // Brief scale-up animation as feedback
+    const btn = e.currentTarget;
+    btn.style.transform = 'scale(1.3)';
+    setTimeout(() => btn.style.transform = '', 200);
 };
 
 window.openPreview = (id, filename) => {

@@ -49,6 +49,15 @@ export default {
                 const githubUser = await auth.callback(request);
                 if (githubUser instanceof Response) return githubUser; // Error response
 
+                // Whitelist check
+                const allowedUsers = env.ALLOWED_USERS;
+                if (allowedUsers && allowedUsers.trim()) {
+                    const whitelist = allowedUsers.split(',').map(u => u.trim().toLowerCase());
+                    if (!whitelist.includes(githubUser.login.toLowerCase())) {
+                        return new Response('Access Denied: Your GitHub account is not authorized.', { status: 403 });
+                    }
+                }
+
                 // Sync with DB
                 let user = await db.getUserByGithubId(githubUser.id.toString());
                 if (!user) {

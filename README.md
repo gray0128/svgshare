@@ -99,6 +99,7 @@ npx wrangler d1 execute svgshare-db --remote --file=schema.sql
 | `GITHUB_CLIENT_ID` | 你的 GitHub Client ID |
 | `GITHUB_CLIENT_SECRET` | 你的 GitHub Client Secret |
 | `JWT_SECRET` | 随机字符串 (可用 `openssl rand -base64 32` 生成) |
+| `ALLOWED_USERS` | (可选) 允许登录的 GitHub 用户名，多个用逗号分隔 |
 
 ### 8. 部署
 
@@ -120,11 +121,17 @@ npx wrangler deploy
    - 每次 `wrangler deploy` 时，`[vars]` 会覆盖 Dashboard 中的配置
    - 正确做法是在 Dashboard 中设置 Secrets
 
-2. **本地开发**:
+2. **登录白名单** (`ALLOWED_USERS`):
+   - 如果未设置或为空 → 任何 GitHub 用户都可以登录，文件存储使用的是你的 R2
+   - 如果设置了 → 仅白名单中的用户可登录
+   - 格式: `user1,user2,user3` (不区分大小写)
+   - 设置方法: `npx wrangler secret put ALLOWED_USERS`
+
+3. **本地开发**:
    - 创建 `.dev.vars` 文件存放本地开发变量
    - 该文件已在 `.gitignore` 中，不会提交到仓库
 
-3. **GitHub 自动部署**:
+4. **GitHub 自动部署**:
    - 在 Cloudflare Workers → Settings → Builds & Deployments 中连接 GitHub 仓库
    - 推送代码后将自动部署
 
