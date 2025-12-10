@@ -102,6 +102,14 @@ export default {
             });
         }
 
+        // --- Public API: Share Info (for share page) ---
+        if (path.startsWith('/api/s/')) {
+            const shareId = path.split('/api/s/')[1];
+            const share = await db.getShareByShareId(shareId);
+            if (!share) return new Response('Not Found', { status: 404 });
+            return Response.json(share);
+        }
+
         // --- Protected API Routes ---
         const userId = await verifySession(request);
         if (!userId) {
@@ -228,15 +236,6 @@ export default {
                 const newShare = await db.createShare(id, shareId);
                 return Response.json(newShare);
             }
-        }
-
-        // API INFO (Share Metadata for public page - technically public maybe?)
-        // But usually share page logic is server-side rendered or client-side fetches public API
-        if (path.startsWith('/api/s/')) {
-            const shareId = path.split('/api/s/')[1];
-            const share = await db.getShareByShareId(shareId);
-            if (!share) return new Response('Not Found', { status: 404 });
-            return Response.json(share);
         }
 
         return new Response('Not Found', { status: 404 });

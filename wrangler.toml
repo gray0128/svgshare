@@ -6,7 +6,7 @@ compatibility_date = "2024-09-23"
 [[d1_databases]]
 binding = "DB"
 database_name = "svgshare-db"
-database_id = "xxxx-xxxx-xxxx-xxxx" # User to replace
+database_id = "ea574aa9-f72b-43f9-9399-aa62c5d5daa1"
 
 # R2 Bucket Binding
 [[r2_buckets]]
