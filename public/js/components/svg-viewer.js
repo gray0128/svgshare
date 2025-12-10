@@ -60,6 +60,7 @@ class SvgViewer extends HTMLElement {
             padding: 4px;
             border-radius: 8px;
             backdrop-filter: blur(4px);
+            z-index: 10;
         }
         button {
             background: rgba(255,255,255,0.1);
