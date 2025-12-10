@@ -84,7 +84,7 @@ class SvgViewer extends HTMLElement {
       </div>
       <div class="controls">
         <button id="zoomOut">-</button>
-        <button id="reset">R</button>
+        <button id="reset" title="Reset View">↺</button>
         <button id="zoomIn">+</button>
       </div>
     `;
@@ -157,7 +157,7 @@ class SvgViewer extends HTMLElement {
             const ys = (e.clientY - this.pointY) / this.scale;
             const delta = -e.deltaY;
 
-            (delta > 0) ? (this.scale *= 1.1) : (this.scale /= 1.1);
+            (delta > 0) ? (this.scale *= 1.03) : (this.scale /= 1.03);
 
             this.pointX = e.clientX - xs * this.scale;
             this.pointY = e.clientY - ys * this.scale;

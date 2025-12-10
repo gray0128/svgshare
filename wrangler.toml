@@ -18,10 +18,10 @@ bucket_name = "svgshare-files"
 # binding = "KV"
 # id = "xxxx"
 
-[vars]
-GITHUB_CLIENT_ID = "replace_me"
-GITHUB_CLIENT_SECRET = "replace_me"
-JWT_SECRET = "replace_me_with_long_random_string"
+# [vars]
+# GITHUB_CLIENT_ID = "replace_me"
+# GITHUB_CLIENT_SECRET = "replace_me"
+# JWT_SECRET = "replace_me_with_long_random_string"
 
 [assets]
 directory = "./public"
