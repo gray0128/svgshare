@@ -1,0 +1,24 @@
+# Node
+node_modules
+npm-debug.log
+
+# Cloudflare Wrangler
+.wrangler
+.dev.vars
+dist
+
+# VSCode
+.vscode
+
+# System
+.DS_Store
+Thumbs.db
+
+# Private keys/certs (just in case)
+*.pem
+*.key
+
+# Documentation (Ignored by request)
+技术设计.md
+需求说明_v2.md
+需求说明.md

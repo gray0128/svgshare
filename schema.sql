@@ -1,0 +1,36 @@
+-- Users Table
+DROP TABLE IF EXISTS users;
+CREATE TABLE users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    github_id TEXT UNIQUE NOT NULL,
+    username TEXT NOT NULL,
+    avatar_url TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Files Table
+DROP TABLE IF EXISTS files;
+CREATE TABLE files (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    filename TEXT NOT NULL,
+    size INTEGER NOT NULL, -- in bytes
+    r2_key TEXT NOT NULL, -- UUIDv4
+    width INTEGER,
+    height INTEGER,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- Shares Table
+DROP TABLE IF EXISTS shares;
+CREATE TABLE shares (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    file_id INTEGER UNIQUE NOT NULL,
+    share_id TEXT UNIQUE NOT NULL, -- Public Access Token/UUID
+    is_enabled BOOLEAN DEFAULT 0,
+    visit_count INTEGER DEFAULT 0,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (file_id) REFERENCES files(id) ON DELETE CASCADE
+);

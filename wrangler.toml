@@ -1,0 +1,28 @@
+name = "svgshare"
+main = "src/worker.js"
+compatibility_date = "2024-09-23"
+
+# D1 Database Binding
+[[d1_databases]]
+binding = "DB"
+database_name = "svgshare-db"
+database_id = "xxxx-xxxx-xxxx-xxxx" # User to replace
+
+# R2 Bucket Binding
+[[r2_buckets]]
+binding = "BUCKET"
+bucket_name = "svgshare-files"
+
+# KV Namespace for Session/Assets (Optional, using D1 for sessions for now)
+# [[kv_namespaces]]
+# binding = "KV"
+# id = "xxxx"
+
+[vars]
+GITHUB_CLIENT_ID = "replace_me"
+GITHUB_CLIENT_SECRET = "replace_me"
+JWT_SECRET = "replace_me_with_long_random_string"
+
+[assets]
+directory = "./public"
+binding = "ASSETS"

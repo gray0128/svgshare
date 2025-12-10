@@ -1,0 +1,235 @@
+// Dashboard Logic
+
+const state = {
+    user: null,
+    files: []
+};
+
+async function init() {
+    // 1. Check Auth
+    try {
+        const res = await fetch('/auth/me');
+        if (!res.ok) {
+            window.location.href = '/';
+            return;
+        }
+        state.user = await res.json();
+        renderUser();
+        loadFiles();
+    } catch (e) {
+        console.error(e);
+        window.location.href = '/';
+    }
+
+    // 2. Setup Upload
+    setupUpload();
+}
+
+function renderUser() {
+    const container = document.getElementById('userInfo');
+    container.innerHTML = `
+        <span style="font-size: 0.9rem;">${state.user.username}</span>
+        <img src="${state.user.avatar_url}" class="avatar" alt="${state.user.username}">
+    `;
+}
+
+function setupUpload() {
+    const dropZone = document.getElementById('dropZone');
+    const fileInput = document.getElementById('fileInput');
+
+    dropZone.onclick = () => fileInput.click();
+
+    dropZone.ondragover = (e) => {
+        e.preventDefault();
+        dropZone.classList.add('dragover');
+    };
+
+    dropZone.ondragleave = () => {
+        dropZone.classList.remove('dragover');
+    };
+
+    dropZone.ondrop = (e) => {
+        e.preventDefault();
+        dropZone.classList.remove('dragover');
+        handleFiles(e.dataTransfer.files);
+    };
+
+    fileInput.onchange = () => {
+        handleFiles(fileInput.files);
+    };
+}
+
+async function handleFiles(files) {
+    if (!files.length) return;
+    const file = files[0];
+
+    if (file.type !== 'image/svg+xml' && !file.name.endsWith('.svg')) {
+        alert('Only SVG files are allowed.');
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    // Optimistic UI could go here
+    const dropZone = document.getElementById('dropZone');
+    const originalText = dropZone.innerHTML;
+    dropZone.innerHTML = '<p>Uploading...</p>';
+
+    try {
+        const res = await fetch('/api/files', {
+            method: 'POST',
+            body: formData
+        });
+
+        if (!res.ok) throw new Error(await res.text());
+
+        // Refresh list
+        await loadFiles();
+    } catch (e) {
+        alert('Upload failed: ' + e.message);
+    } finally {
+        dropZone.innerHTML = originalText;
+    }
+}
+
+// Ensure loadFiles is globally accessible for the refresh button
+window.loadFiles = async function () {
+    try {
+        const res = await fetch('/api/files');
+        if (!res.ok) throw new Error('Failed to fetch files');
+        state.files = await res.json();
+        renderFiles();
+    } catch (e) {
+        console.error(e);
+    }
+};
+
+function renderFiles() {
+    const grid = document.getElementById('fileGrid');
+    grid.innerHTML = '';
+
+    state.files.forEach(file => {
+        const card = document.createElement('div');
+        card.className = 'file-card';
+
+        const isShared = file.share_enabled;
+        const shareUrl = isShared ? `${window.location.origin}/s/${file.share_id}` : '';
+
+        // Format size & date
+        const sizeStr = (file.size / 1024).toFixed(1) + ' KB';
+        const dimsStr = (file.width && file.height) ? `${file.width} x ${file.height}` : 'N/A';
+        const dateStr = new Date(file.created_at).toLocaleString();
+
+        card.innerHTML = `
+            <div class="preview" onclick="openPreview(${file.id}, '${file.filename}')">
+                <img src="/api/files/${file.id}/content" loading="lazy" alt="${file.filename}">
+            </div>
+            <div class="meta">
+                <div class="meta-header">
+                    <div class="filename" title="${file.filename}">${file.filename}</div>
+                    <div class="card-actions">
+                         <button class="btn-icon" onclick="renameFile(${file.id}, '${file.filename}', event)" title="Rename">
+                            <span class="material-symbols-outlined">edit</span>
+                        </button>
+                        <button class="btn-icon" onclick="toggleShare(${file.id}, ${isShared}, event)" title="${isShared ? 'Disable Sharing' : 'Enable Sharing'}">
+                            <span class="material-symbols-outlined" style="color: ${isShared ? 'var(--primary-color)' : 'inherit'}; font-size: 24px;">
+                                ${isShared ? 'toggle_on' : 'toggle_off'}
+                            </span>
+                        </button>
+                        ${isShared ? `<button class="btn-icon" onclick="copyLink('${shareUrl}', event)" title="Copy Link"><span class="material-symbols-outlined">link</span></button>` : ''}
+                        <button class="btn-icon" onclick="deleteFile(${file.id}, event)" title="Delete"><span class="material-symbols-outlined">delete</span></button>
+                    </div>
+                </div>
+                
+                <div class="meta-extra">
+                   <div style="display:flex; justify-content:space-between;"><span>Size:</span> <span>${sizeStr}</span></div>
+                   <div style="display:flex; justify-content:space-between;"><span>Dims:</span> <span>${dimsStr}</span></div>
+                   <div style="display:flex; justify-content:space-between;"><span>Uploaded:</span> <span>${dateStr}</span></div>
+                </div>
+            </div>
+        `;
+        grid.appendChild(card);
+    });
+}
+
+window.renameFile = async (id, oldName, e) => {
+    e.stopPropagation();
+    const newName = prompt('Enter new filename:', oldName);
+    if (!newName || newName === oldName) return;
+
+    // Simple verification for extension
+    let finalName = newName;
+    if (!finalName.toLowerCase().endsWith('.svg')) {
+        finalName += '.svg';
+    }
+
+    try {
+        const res = await fetch(`/api/files/${id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ filename: finalName })
+        });
+        if (!res.ok) throw new Error('Rename failed');
+        loadFiles();
+    } catch (e) { alert(e.message); }
+};
+
+window.deleteFile = async (id, e) => {
+    e.stopPropagation();
+    if (!confirm('Are you sure?')) return;
+    try {
+        await fetch(`/api/files/${id}`, { method: 'DELETE' });
+        loadFiles();
+    } catch (e) { alert(e.message); }
+};
+
+window.toggleShare = async (id, currentStatus, e) => {
+    e.stopPropagation();
+    try {
+        await fetch(`/api/files/${id}/share`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ enable: !currentStatus })
+        });
+        loadFiles();
+    } catch (e) { alert(e.message); }
+};
+
+window.copyLink = (url, e) => {
+    e.stopPropagation();
+    navigator.clipboard.writeText(url);
+    alert('Link copied!');
+};
+
+window.openPreview = (id, filename) => {
+    // Open a modal or new window with the viewer
+    // For simplicity, let's just open in a new tab for now, or use a simple modal overlay
+    const url = `/api/files/${id}/content`;
+
+    // Create a modal overlay with svg-viewer
+    const modal = document.createElement('div');
+    modal.style.cssText = `
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0,0,0,0.9); z-index: 1000; display: flex;
+        flex-direction: column;
+    `;
+
+    // Header
+    const header = document.createElement('div');
+    header.style.cssText = 'padding: 10px 20px; display: flex; justify-content: space-between; color: white;';
+    header.innerHTML = `<span>${filename}</span> <button onclick="this.closest('div').parentElement.remove()" style="color:white; font-size: 1.5rem;">&times;</button>`;
+
+    // Viewer
+    const viewer = document.createElement('svg-viewer');
+    viewer.style.flex = '1';
+
+    modal.appendChild(header);
+    modal.appendChild(viewer);
+    document.body.appendChild(modal);
+
+    // Trigger load
+    setTimeout(() => viewer.setAttribute('src', url), 10);
+};
+
+init();
