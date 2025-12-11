@@ -5,6 +5,8 @@ CREATE TABLE users (
     github_id TEXT UNIQUE NOT NULL,
     username TEXT NOT NULL,
     avatar_url TEXT,
+    role TEXT DEFAULT 'user', -- 'admin' | 'user'
+    status TEXT DEFAULT 'pending', -- 'pending' | 'active' | 'locked'
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 

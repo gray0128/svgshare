@@ -14,7 +14,21 @@ async function init() {
             return;
         }
         state.user = await res.json();
+
+        // Check Status
+        if (state.user.status === 'locked') {
+            renderLocked();
+            return;
+        }
+
+        // Render Header User Info (includes Logout & Admin Link)
         renderUser();
+
+        if (state.user.status === 'pending') {
+            renderPending();
+            return;
+        }
+
         loadFiles();
     } catch (e) {
         console.error(e);
@@ -27,10 +41,48 @@ async function init() {
 
 function renderUser() {
     const container = document.getElementById('userInfo');
-    container.innerHTML = `
-        <span style="font-size: 0.9rem;">${state.user.username}</span>
-        <img src="${state.user.avatar_url}" class="avatar" alt="${state.user.username}">
+    let html = `
+        <div style="display:flex; align-items:center; gap:16px;">
+            <span style="font-size: 0.9rem;">${state.user.username}</span>
+            <img src="${state.user.avatar_url}" class="avatar" alt="${state.user.username}">
     `;
+
+    if (state.user.role === 'admin') {
+        html += `<a href="/admin.html" style="color: var(--accent); text-decoration: none; font-size: 0.8rem; border: 1px solid var(--accent); padding: 4px 8px;">ADMIN</a>`;
+    }
+
+    html += `
+            <button onclick="location.href='/auth/logout'" style="background:none; border:none; color: var(--text-muted); cursor:pointer; display:flex; align-items:center;" title="Logout">
+                <span class="material-symbols-outlined">logout</span>
+            </button>
+        </div>
+    `;
+    container.innerHTML = html;
+}
+
+function renderLocked() {
+    renderUser(); // Show user info so they can logout
+    const main = document.querySelector('.main-content');
+    main.innerHTML = `
+        <div style="height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--text-muted); text-align: center;">
+            <span class="material-symbols-outlined" style="font-size: 64px; color: var(--accent); margin-bottom: 20px;">lock</span>
+            <h1 style="color: var(--text-main); margin-bottom: 10px;">Account Locked</h1>
+            <p>Your account has been locked by an administrator.</p>
+        </div>
+    `;
+}
+
+function renderPending() {
+    const main = document.querySelector('.main-content');
+    main.innerHTML = `
+        <div style="height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--text-muted); text-align: center;">
+            <span class="material-symbols-outlined" style="font-size: 64px; color: orange; margin-bottom: 20px;">pending</span>
+            <h1 style="color: var(--text-main); margin-bottom: 10px;">Awaiting Approval</h1>
+            <p>Your account is pending administrator approval.</p>
+            <p style="margin-top: 10px;">Please contact support or wait for review.</p>
+        </div>
+    `;
+    // Disable Upload Area if visible (it's wiped by innerHTML above, but just in case)
 }
 
 function setupUpload() {

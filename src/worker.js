@@ -1,6 +1,6 @@
 import { D1Helper } from './db.js';
 import { R2Helper } from './r2.js';
-import { AuthHelper, createSessionCookie, verifySession } from './auth.js';
+import { AuthHelper, createSessionCookie, verifySession, createLogoutResponse } from './auth.js';
 
 export default {
     async fetch(request, env, ctx) {
@@ -49,22 +49,23 @@ export default {
                 const githubUser = await auth.callback(request);
                 if (githubUser instanceof Response) return githubUser; // Error response
 
-                // Whitelist check
-                const allowedUsers = env.ALLOWED_USERS;
-                if (allowedUsers && allowedUsers.trim()) {
-                    const whitelist = allowedUsers.split(',').map(u => u.trim().toLowerCase());
-                    if (!whitelist.includes(githubUser.login.toLowerCase())) {
-                        return new Response('Access Denied: Your GitHub account is not authorized.', { status: 403 });
-                    }
-                }
+
 
                 // Sync with DB
                 let user = await db.getUserByGithubId(githubUser.id.toString());
                 if (!user) {
+                    // Determine Role & Status
+                    const adminIds = (env.ADMIN_GITHUB_IDS || '').split(',').map(s => s.trim().toLowerCase());
+                    const isadmin = adminIds.includes(githubUser.login.toLowerCase());
+                    const role = isadmin ? 'admin' : 'user';
+                    const status = isadmin ? 'active' : 'pending';
+
                     user = await db.createUser(
                         githubUser.id.toString(),
                         githubUser.login,
-                        githubUser.avatar_url
+                        githubUser.avatar_url,
+                        role,
+                        status
                     );
                 }
 
@@ -87,6 +88,10 @@ export default {
             if (!userId) return new Response('Unauthorized', { status: 401 });
             const user = await db.getUserById(userId);
             return Response.json(user);
+        }
+
+        if (path === '/auth/logout') {
+            return createLogoutResponse();
         }
 
         // --- Public Share Access ---
@@ -125,11 +130,68 @@ export default {
             return new Response('Unauthorized', { status: 401 });
         }
 
+        const currentUser = await db.getUserById(userId);
+        if (!currentUser) return new Response('Unauthorized', { status: 401 });
+
+        // Status Check for Write Operations & Access
+        // Locked users can only access /auth/me and /auth/logout (already handled above)
+        // Check for specific API blocks
+        if (currentUser.status === 'locked') {
+            return new Response('Account Locked', { status: 403 });
+        }
+
+        // --- Admin Routes ---
+        if (path.startsWith('/api/admin/')) {
+            if (currentUser.role !== 'admin') {
+                return new Response('Forbidden: Admin access required', { status: 403 });
+            }
+
+            if (path === '/api/admin/users' && method === 'GET') {
+                const urlObj = new URL(request.url);
+                const page = parseInt(urlObj.searchParams.get('page') || '1');
+                const limit = parseInt(urlObj.searchParams.get('limit') || '20');
+                const role = urlObj.searchParams.get('role');
+                const status = urlObj.searchParams.get('status');
+                const search = urlObj.searchParams.get('search');
+
+                const result = await db.listUsers({ page, limit, role, status, search });
+                return Response.json(result);
+            }
+
+            // PATCH /api/admin/users/:id/status
+            if (path.startsWith('/api/admin/users/') && path.endsWith('/status') && method === 'PATCH') {
+                const id = path.split('/')[4];
+                const { status } = await request.json();
+
+                // Validate status
+                if (!['active', 'pending', 'locked'].includes(status)) {
+                    return new Response('Invalid status', { status: 400 });
+                }
+
+                // Prevent Admin locking themselves? (Optional safety)
+                if (id == currentUser.id && status === 'locked') {
+                    return new Response('Cannot lock yourself', { status: 400 });
+                }
+
+                const updated = await db.updateUserStatus(id, status);
+                return Response.json(updated);
+            }
+
+            return new Response('Admin API Not Found', { status: 404 });
+        }
+
+
         // LIST FILES
         if (path === '/api/files' && method === 'GET') {
             const files = await db.getFilesByUserId(userId);
             return Response.json(files);
         }
+
+        // Write Operations Block for Pending Users
+        if (currentUser.status === 'pending' && method !== 'GET') {
+            return new Response('Account Pending Verification', { status: 403 });
+        }
+
 
         // UPLOAD FILE
         if (path === '/api/files' && method === 'POST') {

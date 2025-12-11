@@ -93,3 +93,13 @@ export async function verifySession(request) {
         return null;
     }
 }
+
+export function createLogoutResponse() {
+    return new Response(null, {
+        status: 302,
+        headers: {
+            'Location': '/',
+            'Set-Cookie': 'session=; HttpOnly; Path=/; Max-Age=0; SameSite=Lax; Secure'
+        }
+    });
+}

@@ -9,16 +9,61 @@ export class D1Helper {
         return await stmt.bind(githubId).first();
     }
 
-    async createUser(githubId, username, avatarUrl) {
+    async createUser(githubId, username, avatarUrl, role = 'user', status = 'pending') {
         const stmt = this.db.prepare(
-            'INSERT INTO users (github_id, username, avatar_url) VALUES (?, ?, ?) RETURNING *'
+            'INSERT INTO users (github_id, username, avatar_url, role, status) VALUES (?, ?, ?, ?, ?) RETURNING *'
         );
-        return await stmt.bind(githubId, username, avatarUrl).first();
+        return await stmt.bind(githubId, username, avatarUrl, role, status).first();
     }
 
     async getUserById(id) {
         const stmt = this.db.prepare('SELECT * FROM users WHERE id = ?');
         return await stmt.bind(id).first();
+    }
+
+    // Admin Operations
+    async listUsers({ page = 1, limit = 20, role, status, search } = {}) {
+        let query = 'SELECT * FROM users WHERE 1=1';
+        const params = [];
+
+        if (role) {
+            query += ' AND role = ?';
+            params.push(role);
+        }
+        if (status) {
+            query += ' AND status = ?';
+            params.push(status);
+        }
+        if (search) {
+            query += ' AND (username LIKE ? OR github_id LIKE ?)';
+            params.push(`%${search}%`);
+            params.push(`%${search}%`);
+        }
+
+        // Count total before pagination
+        let countQuery = query.replace('SELECT *', 'SELECT COUNT(*) as total');
+        const countStmt = this.db.prepare(countQuery);
+        const totalResult = await countStmt.bind(...params).first();
+
+        // Add pagination
+        query += ' ORDER BY created_at DESC LIMIT ? OFFSET ?';
+        params.push(limit);
+        params.push((page - 1) * limit);
+
+        const stmt = this.db.prepare(query);
+        const results = await stmt.bind(...params).all();
+
+        return {
+            users: results.results || [],
+            total: totalResult.total,
+            page,
+            limit
+        };
+    }
+
+    async updateUserStatus(id, status) {
+        const stmt = this.db.prepare('UPDATE users SET status = ? WHERE id = ? RETURNING *');
+        return await stmt.bind(status, id).first();
     }
 
     // File Operations
