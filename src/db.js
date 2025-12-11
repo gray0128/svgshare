@@ -66,6 +66,11 @@ export class D1Helper {
         return await stmt.bind(status, id).first();
     }
 
+    async updateUserRoleAndStatus(id, role, status) {
+        const stmt = this.db.prepare('UPDATE users SET role = ?, status = ? WHERE id = ? RETURNING *');
+        return await stmt.bind(role, status, id).first();
+    }
+
     // File Operations
     async createFile(userId, filename, size, r2Key, width, height) {
         const stmt = this.db.prepare(

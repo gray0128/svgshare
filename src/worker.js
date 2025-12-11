@@ -67,6 +67,15 @@ export default {
                         role,
                         status
                     );
+                } else {
+                    // Check if existing user should be admin
+                    const adminIds = (env.ADMIN_GITHUB_IDS || '').split(',').map(s => s.trim().toLowerCase());
+                    const isadmin = adminIds.includes(githubUser.login.toLowerCase());
+
+                    if (isadmin && user.role !== 'admin') {
+                        // Promote to admin
+                        user = await db.updateUserRoleAndStatus(user.id, 'admin', 'active');
+                    }
                 }
 
                 // Create Session
