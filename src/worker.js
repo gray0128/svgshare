@@ -207,8 +207,8 @@ export default {
                 return new Response('Only SVG allowed', { status: 400 });
             }
 
-            if (file.size > 1024 * 1024) {
-                return new Response('File too large (>1MB)', { status: 400 });
+            if (file.size > 2 * 1024 * 1024) {
+                return new Response('File too large (>2MB)', { status: 400 });
             }
 
             // Generate R2 Key

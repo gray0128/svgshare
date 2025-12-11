@@ -171,6 +171,13 @@
             background: var(--bg-card-hover);
         }
 
+        .meta-header {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            width: 100%;
+        }
+
         .filename {
             font-size: 0.9rem;
             white-space: nowrap;
@@ -178,6 +185,17 @@
             text-overflow: ellipsis;
             font-weight: 600;
             color: var(--text-main);
+            width: 100%;
+        }
+
+        .card-actions {
+            display: flex;
+            gap: 8px;
+            align-self: flex-end;
+            justify-content: flex-end;
+            width: 100%;
+            border-top: 1px solid var(--border-subtle);
+            padding-top: 12px;
         }
 
         /* Extra info hidden by default */
@@ -202,18 +220,6 @@
             opacity: 1;
             padding-top: 8px;
             margin-top: 8px;
-        }
-
-        .meta-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            width: 100%;
-        }
-
-        .card-actions {
-            display: flex;
-            gap: 8px;
         }
     </style>
 </head>

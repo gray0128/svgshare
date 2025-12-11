@@ -120,6 +120,11 @@ async function handleFiles(files) {
         return;
     }
 
+    if (file.size > 2 * 1024 * 1024) {
+        alert('File size exceeds 2MB limit.');
+        return;
+    }
+
     const formData = new FormData();
     formData.append('file', file);
 
