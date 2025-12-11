@@ -19,6 +19,6 @@ Thumbs.db
 *.key
 
 # Documentation (Ignored by request)
-# 技术设计.md
-# 需求说明_v2.md
+技术设计.md
+需求说明_v2.md
 需求说明.md

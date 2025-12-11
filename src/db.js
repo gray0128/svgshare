@@ -23,30 +23,48 @@ export class D1Helper {
 
     // Admin Operations
     async listUsers({ page = 1, limit = 20, role, status, search } = {}) {
-        let query = 'SELECT * FROM users WHERE 1=1';
+        let query = `
+            SELECT u.*, 
+            COUNT(f.id) as file_count, 
+            COALESCE(SUM(f.size), 0) as total_storage_used 
+            FROM users u 
+            LEFT JOIN files f ON u.id = f.user_id 
+            WHERE 1=1
+        `;
         const params = [];
 
         if (role) {
-            query += ' AND role = ?';
+            query += ' AND u.role = ?';
             params.push(role);
         }
         if (status) {
-            query += ' AND status = ?';
+            query += ' AND u.status = ?';
             params.push(status);
         }
         if (search) {
-            query += ' AND (username LIKE ? OR github_id LIKE ?)';
+            query += ' AND (u.username LIKE ? OR u.github_id LIKE ?)';
             params.push(`%${search}%`);
             params.push(`%${search}%`);
         }
 
-        // Count total before pagination
-        let countQuery = query.replace('SELECT *', 'SELECT COUNT(*) as total');
-        const countStmt = this.db.prepare(countQuery);
+        query += ' GROUP BY u.id';
+
+        // Count total before pagination (this is tricky with Group By, simplifying to count users)
+        // For correct total count with filters:
+        const countQuery = `SELECT COUNT(*) as total FROM (${query})`;
+        // Note: D1 might complain about nested query params binding order if not careful.
+        // Or cleaner: just count users with same where clause.
+
+        let countSql = 'SELECT COUNT(*) as total FROM users u WHERE 1=1';
+        if (role) countSql += ' AND u.role = ?';
+        if (status) countSql += ' AND u.status = ?';
+        if (search) countSql += ' AND (u.username LIKE ? OR u.github_id LIKE ?)';
+
+        const countStmt = this.db.prepare(countSql);
         const totalResult = await countStmt.bind(...params).first();
 
         // Add pagination
-        query += ' ORDER BY created_at DESC LIMIT ? OFFSET ?';
+        query += ' ORDER BY u.created_at DESC LIMIT ? OFFSET ?';
         params.push(limit);
         params.push((page - 1) * limit);
 
@@ -69,6 +87,25 @@ export class D1Helper {
     async updateUserRoleAndStatus(id, role, status) {
         const stmt = this.db.prepare('UPDATE users SET role = ?, status = ? WHERE id = ? RETURNING *');
         return await stmt.bind(role, status, id).first();
+    }
+
+    async updateUserQuota(id, limit) {
+        const stmt = this.db.prepare('UPDATE users SET storage_limit = ? WHERE id = ? RETURNING *');
+        return await stmt.bind(limit, id).first();
+    }
+
+    async getUserUsage(userId) {
+        const stmt = this.db.prepare(`
+            SELECT 
+                u.storage_limit,
+                COUNT(f.id) as file_count,
+                COALESCE(SUM(f.size), 0) as total_used
+            FROM users u
+            LEFT JOIN files f ON u.id = f.user_id
+            WHERE u.id = ?
+            GROUP BY u.id
+        `);
+        return await stmt.bind(userId).first();
     }
 
     // File Operations

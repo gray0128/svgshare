@@ -95,7 +95,15 @@ export default {
         if (path === '/auth/me') {
             const userId = await verifySession(request);
             if (!userId) return new Response('Unauthorized', { status: 401 });
+
             const user = await db.getUserById(userId);
+            // Attach usage stats
+            const usage = await db.getUserUsage(userId);
+            if (usage) {
+                user.storage_usage = usage.total_used;
+                user.file_count = usage.file_count;
+                // storage_limit is already in user object from getUserById
+            }
             return Response.json(user);
         }
 
@@ -186,6 +194,20 @@ export default {
                 return Response.json(updated);
             }
 
+            // PATCH /api/admin/users/:id/quota
+            if (path.startsWith('/api/admin/users/') && path.endsWith('/quota') && method === 'PATCH') {
+                const id = path.split('/')[4];
+                const { limit } = await request.json();
+
+                const quota = parseInt(limit);
+                if (isNaN(quota) || quota < 0) {
+                    return new Response('Invalid quota value', { status: 400 });
+                }
+
+                const updated = await db.updateUserQuota(id, quota);
+                return Response.json(updated);
+            }
+
             return new Response('Admin API Not Found', { status: 404 });
         }
 
@@ -218,6 +240,15 @@ export default {
 
             if (file.size > 2 * 1024 * 1024) {
                 return new Response('File too large (>2MB)', { status: 400 });
+            }
+
+            // Check Quota
+            const usage = await db.getUserUsage(userId);
+            const currentObj = await db.getUserById(userId); // Ensure we have latest limit
+            const limit = currentObj.storage_limit || 104857600; // Default 100MB
+
+            if ((usage.total_used + file.size) > limit) {
+                return new Response('Storage quota exceeded', { status: 403 });
             }
 
             // Generate R2 Key

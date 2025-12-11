@@ -85,18 +85,30 @@
             font-weight: 600;
         }
 
-        .status-active { background: rgba(0, 255, 0, 0.1); color: #00ff00; }
-        .status-pending { background: rgba(255, 165, 0, 0.1); color: orange; }
-        .status-locked { background: rgba(255, 0, 0, 0.1); color: #ff3333; }
+        .status-active {
+            background: rgba(0, 255, 0, 0.1);
+            color: #00ff00;
+        }
+
+        .status-pending {
+            background: rgba(255, 165, 0, 0.1);
+            color: orange;
+        }
+
+        .status-locked {
+            background: rgba(255, 0, 0, 0.1);
+            color: #ff3333;
+        }
 
         .filters {
             display: flex;
             gap: 16px;
             margin-bottom: 24px;
         }
-        
-        input, select {
-            background: rgba(255,255,255,0.05);
+
+        input,
+        select {
+            background: rgba(255, 255, 255, 0.05);
             border: 1px solid var(--border-subtle);
             color: white;
             padding: 8px 12px;
@@ -113,7 +125,11 @@
             font-size: 0.75rem;
             margin-right: 4px;
         }
-        .action-btn:hover { border-color: var(--accent); color: var(--text-main); }
+
+        .action-btn:hover {
+            border-color: var(--accent);
+            color: var(--text-main);
+        }
 
         .btn-logout {
             background: none;
@@ -127,6 +143,7 @@
             align-items: center;
             gap: 8px;
         }
+
         .btn-logout:hover {
             background: rgba(255, 51, 0, 0.1);
             border-color: var(--accent);
@@ -144,8 +161,9 @@
             SYSTEM: ROOT LEVEL ACCESS
         </div>
         <div class="user-info">
-             <a href="/dashboard" style="color: var(--text-muted); text-decoration: none; margin-right: 20px;">&larr; User Dashboard</a>
-             <button class="btn-logout" onclick="location.href='/auth/logout'">
+            <a href="/dashboard" style="color: var(--text-muted); text-decoration: none; margin-right: 20px;">&larr;
+                User Dashboard</a>
+            <button class="btn-logout" onclick="location.href='/auth/logout'">
                 <span class="material-symbols-outlined" style="font-size: 16px;">logout</span>
                 LOGOUT
             </button>
@@ -174,6 +192,7 @@
                     <th>User</th>
                     <th>Role</th>
                     <th>Status</th>
+                    <th>Usage</th>
                     <th>Registered</th>
                     <th>Actions</th>
                 </tr>
@@ -182,13 +201,15 @@
                 <!-- Rows injected here -->
             </tbody>
         </table>
-         <div style="margin-top: 20px; display: flex; justify-content: center; gap: 10px;">
+        <div style="margin-top: 20px; display: flex; justify-content: center; gap: 10px;">
             <button class="action-btn" id="prevPage">Prev</button>
-            <span id="pageInfo" style="color: var(--text-muted); font-family: var(--font-mono); align-self: center;">Page 1</span>
+            <span id="pageInfo"
+                style="color: var(--text-muted); font-family: var(--font-mono); align-self: center;">Page 1</span>
             <button class="action-btn" id="nextPage">Next</button>
         </div>
     </main>
 
     <script src="/js/admin.js" type="module"></script>
 </body>
+
 </html>

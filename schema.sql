@@ -7,6 +7,7 @@ CREATE TABLE users (
     avatar_url TEXT,
     role TEXT DEFAULT 'user', -- 'admin' | 'user'
     status TEXT DEFAULT 'pending', -- 'pending' | 'active' | 'locked'
+    storage_limit INTEGER DEFAULT 104857600, -- 100MB
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 

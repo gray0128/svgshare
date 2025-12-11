@@ -23,6 +23,7 @@ async function init() {
 
         // Render Header User Info (includes Logout & Admin Link)
         renderUser();
+        renderStorage();
 
         if (state.user.status === 'pending') {
             renderPending();
@@ -41,23 +42,52 @@ async function init() {
 
 function renderUser() {
     const container = document.getElementById('userInfo');
-    let html = `
-        <div style="display:flex; align-items:center; gap:16px;">
+    const isAdmin = state.user.role === 'admin';
+
+    container.innerHTML = `
+        <div class="user-menu-container">
             <span style="font-size: 0.9rem;">${state.user.username}</span>
             <img src="${state.user.avatar_url}" class="avatar" alt="${state.user.username}">
-    `;
-
-    if (state.user.role === 'admin') {
-        html += `<a href="/admin.html" style="color: var(--accent); text-decoration: none; font-size: 0.8rem; border: 1px solid var(--accent); padding: 4px 8px;">ADMIN</a>`;
-    }
-
-    html += `
-            <button onclick="location.href='/auth/logout'" style="background:none; border:none; color: var(--text-muted); cursor:pointer; display:flex; align-items:center;" title="Logout">
-                <span class="material-symbols-outlined">logout</span>
-            </button>
+            
+            <div class="user-menu-dropdown">
+                ${isAdmin ? `
+                <a href="/admin.html" class="user-menu-item highlight">
+                    <span class="material-symbols-outlined" style="font-size:18px">admin_panel_settings</span>
+                    Admin Dashboard
+                </a>
+                ` : ''}
+                <button onclick="location.href='/auth/logout'" class="user-menu-item danger">
+                    <span class="material-symbols-outlined" style="font-size:18px">logout</span>
+                    Logout
+                </button>
+            </div>
         </div>
     `;
-    container.innerHTML = html;
+}
+
+function renderStorage() {
+    const widget = document.getElementById('storageWidget');
+    if (!widget) return;
+
+    // Limits and Usage are in bytes. Convert to MB.
+    const usedBytes = state.user.storage_usage || 0;
+    const limitBytes = state.user.storage_limit || 104857600;
+
+    const usedMB = (usedBytes / (1024 * 1024)).toFixed(1);
+    const limitMB = (limitBytes / (1024 * 1024)).toFixed(0);
+
+    const percent = Math.min(100, Math.max(0, (usedBytes / limitBytes) * 100));
+
+    document.getElementById('storageText').innerText = `${usedMB} MB / ${limitMB} MB`;
+    document.getElementById('storageBar').style.width = `${percent}%`;
+
+    // Color warnings
+    const bar = document.getElementById('storageBar');
+    if (percent > 90) bar.style.background = '#ff4444';
+    else if (percent > 70) bar.style.background = 'orange';
+    else bar.style.background = 'var(--accent)';
+
+    widget.style.display = 'block';
 }
 
 function renderLocked() {

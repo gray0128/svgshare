@@ -91,6 +91,10 @@ function renderTable() {
     state.users.forEach(user => {
         const tr = document.createElement('tr');
 
+        const usedMB = ((user.total_storage_used || 0) / (1024 * 1024)).toFixed(1);
+        const limitMB = ((user.storage_limit || 104857600) / (1024 * 1024)).toFixed(0);
+        const percent = Math.min(100, ((user.total_storage_used || 0) / (user.storage_limit || 104857600)) * 100).toFixed(0);
+
         tr.innerHTML = `
             <td style="display:flex; gap: 10px; align-items: center;">
                 <img src="${user.avatar_url}" style="width: 24px; height: 24px; border-radius: 50%;">
@@ -99,6 +103,12 @@ function renderTable() {
             </td>
             <td>${user.role}</td>
             <td><span class="status-badge status-${user.status}">${user.status}</span></td>
+            <td style="font-size: 0.8rem;">
+                <div>${usedMB} / ${limitMB} MB</div>
+                <div style="width: 100px; height: 4px; background: #333; margin-top: 4px; border-radius: 2px;">
+                    <div style="width: ${percent}%; height: 100%; background: ${percent > 90 ? 'red' : 'var(--accent)'}; border-radius: 2px;"></div>
+                </div>
+            </td>
             <td>${new Date(user.created_at).toLocaleDateString()}</td>
             <td>
                 ${getActionButtons(user)}
@@ -109,9 +119,11 @@ function renderTable() {
 }
 
 function getActionButtons(user) {
-    if (user.role === 'admin') return ''; // No actions on admins for now
-
     let btns = '';
+    // Common actions (Quota)
+    btns = `<button class="action-btn" onclick="updateQuota(${user.id}, ${user.storage_limit || 104857600})">Quota</button>` + btns;
+
+    if (user.role === 'admin') return btns; // No status actions on admins
 
     if (user.status === 'pending') {
         btns += `<button class="action-btn" onclick="updateStatus(${user.id}, 'active')">Approve</button>`;
@@ -135,6 +147,32 @@ window.updateStatus = async (id, status) => {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ status })
+        });
+        if (!res.ok) throw new Error(await res.text());
+        loadUsers();
+    } catch (e) {
+        alert(e.message);
+    }
+};
+
+window.updateQuota = async (id, currentBytes) => {
+    const currentMB = Math.round(currentBytes / (1024 * 1024));
+    const newMBStr = prompt(`Set storage limit (MB):`, currentMB);
+    if (newMBStr === null) return;
+
+    const newMB = parseInt(newMBStr);
+    if (isNaN(newMB) || newMB < 0) {
+        alert('Invalid number');
+        return;
+    }
+
+    const newBytes = newMB * 1024 * 1024;
+
+    try {
+        const res = await fetch(`/api/admin/users/${id}/quota`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ limit: newBytes })
         });
         if (!res.ok) throw new Error(await res.text());
         loadUsers();
