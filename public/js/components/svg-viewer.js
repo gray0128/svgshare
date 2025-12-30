@@ -34,6 +34,15 @@ class SvgViewer extends HTMLElement {
           overflow: hidden;
           cursor: grab;
         }
+        /* Inject Chinese Handwriting Font (Xiaolai) */
+        @import url('https://cdn.jsdelivr.net/npm/@chinese-fonts/xiaolai/dist/Xiaolai/result.min.css');
+
+        /* Force Excalidraw SVGs to use the imported font */
+        .excalidraw-svg text, 
+        .excalidraw-svg tspan {
+            font-family: 'Xiaolai SC', 'Xiaolai', sans-serif !important;
+        }
+
         :host(:active) {
             cursor: grabbing;
         }
