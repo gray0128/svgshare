@@ -46,8 +46,11 @@ class SvgViewer extends HTMLElement {
            transform-origin: center;
         }
         svg {
-            max-width: 90%;
-            max-height: 90%;
+            width: 100%;
+            height: 100%;
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
             pointer-events: none; /* Let clicks pass to container for panning */
         }
         .controls {
@@ -122,9 +125,61 @@ class SvgViewer extends HTMLElement {
 
                 this.container.innerHTML = '';
                 this.container.appendChild(svg);
+
+                // Auto-fit the SVG content after rendering
+                requestAnimationFrame(() => {
+                    this.autoFitContent(svg);
+                });
             }
         } catch (e) {
             this.container.innerHTML = '<span style="color:red">Error loading SVG</span>';
+        }
+    }
+
+    /**
+     * Auto-fit the SVG content by adjusting viewBox to match actual content bounds.
+     * This fixes issues where SVG content is offset from origin or has incorrect viewBox.
+     */
+    autoFitContent(svg) {
+        try {
+            // Get the actual bounding box of the SVG content
+            const bbox = svg.getBBox();
+
+            // Skip if bbox is invalid (empty SVG)
+            if (bbox.width === 0 || bbox.height === 0) return;
+
+            // Add some padding around the content (5% on each side)
+            const padding = Math.max(bbox.width, bbox.height) * 0.05;
+            const newViewBox = `${bbox.x - padding} ${bbox.y - padding} ${bbox.width + padding * 2} ${bbox.height + padding * 2}`;
+
+            // Store original viewBox for reference
+            this.originalViewBox = svg.getAttribute('viewBox');
+
+            // Set the new viewBox that encompasses all content
+            svg.setAttribute('viewBox', newViewBox);
+
+            // Ensure SVG fills the container properly
+            svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+
+            // Remove fixed width/height if present to allow responsive sizing
+            if (svg.hasAttribute('width')) {
+                this.originalWidth = svg.getAttribute('width');
+                svg.removeAttribute('width');
+            }
+            if (svg.hasAttribute('height')) {
+                this.originalHeight = svg.getAttribute('height');
+                svg.removeAttribute('height');
+            }
+
+            // Reset transform state for fresh view
+            this.scale = 1;
+            this.pointX = 0;
+            this.pointY = 0;
+            this.updateTransform();
+
+        } catch (e) {
+            // getBBox may fail in some edge cases, silently ignore
+            console.warn('Auto-fit failed:', e);
         }
     }
 
