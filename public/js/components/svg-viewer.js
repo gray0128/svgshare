@@ -25,46 +25,6 @@ class SvgViewer extends HTMLElement {
     render() {
         this.shadowRoot.innerHTML = `
       <style>
-        /* 小莱手写体 (Xiaolai) - Web Font */
-        @import url('https://cdn.jsdelivr.net/npm/cn-fontsource-xiaolai-mono-sc-regular/font.css');
-        
-        /* 主字体定义 */
-        @font-face {
-          font-family: 'Xiaolai SC';
-          src: url('https://cdn.jsdelivr.net/npm/cn-fontsource-xiaolai-mono-sc-regular/fonts/xiaolai-mono-sc-regular.woff2') format('woff2'),
-               url('https://cdn.jsdelivr.net/npm/cn-fontsource-xiaolai-mono-sc-regular/fonts/xiaolai-mono-sc-regular.woff') format('woff');
-          font-weight: normal;
-          font-style: normal;
-          font-display: swap;
-        }
-        
-        /* 字体别名 - 匹配 SVG 中可能使用的各种字体名称 */
-        @font-face {
-          font-family: 'Xiaolai';
-          src: url('https://cdn.jsdelivr.net/npm/cn-fontsource-xiaolai-mono-sc-regular/fonts/xiaolai-mono-sc-regular.woff2') format('woff2');
-          font-display: swap;
-        }
-        @font-face {
-          font-family: '小赖字体';
-          src: url('https://cdn.jsdelivr.net/npm/cn-fontsource-xiaolai-mono-sc-regular/fonts/xiaolai-mono-sc-regular.woff2') format('woff2');
-          font-display: swap;
-        }
-        @font-face {
-          font-family: '小莱手写体';
-          src: url('https://cdn.jsdelivr.net/npm/cn-fontsource-xiaolai-mono-sc-regular/fonts/xiaolai-mono-sc-regular.woff2') format('woff2');
-          font-display: swap;
-        }
-        @font-face {
-          font-family: 'Virgil';
-          src: url('https://cdn.jsdelivr.net/npm/cn-fontsource-xiaolai-mono-sc-regular/fonts/xiaolai-mono-sc-regular.woff2') format('woff2');
-          font-display: swap;
-        }
-        @font-face {
-          font-family: 'Virgil, Xiaolai SC';
-          src: url('https://cdn.jsdelivr.net/npm/cn-fontsource-xiaolai-mono-sc-regular/fonts/xiaolai-mono-sc-regular.woff2') format('woff2');
-          font-display: swap;
-        }
-        
         :host {
           display: block;
           position: relative;
@@ -74,6 +34,15 @@ class SvgViewer extends HTMLElement {
           overflow: hidden;
           cursor: grab;
         }
+        /* Inject Chinese Handwriting Font (Xiaolai) */
+        @import url('https://cdn.jsdelivr.net/npm/@chinese-fonts/xiaolai/dist/Xiaolai/result.min.css');
+
+        /* Force Excalidraw SVGs to use the imported font */
+        .excalidraw-svg text, 
+        .excalidraw-svg tspan {
+            font-family: 'Xiaolai SC', 'Xiaolai', sans-serif !important;
+        }
+
         :host(:active) {
             cursor: grabbing;
         }
