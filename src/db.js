@@ -144,6 +144,13 @@ export class D1Helper {
         return await stmt.bind(newName, id).run();
     }
 
+    async updateFileContent(id, size, width, height) {
+        const stmt = this.db.prepare(
+            'UPDATE files SET size = ?, width = ?, height = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? RETURNING *'
+        );
+        return await stmt.bind(size, width, height, id).first();
+    }
+
     // Share Operations
     async createShare(fileId, shareId) {
         const stmt = this.db.prepare(

@@ -210,12 +210,15 @@ function renderFiles() {
 
         card.innerHTML = `
             <div class="preview" onclick="openPreview(${file.id}, '${file.filename}')">
-                <img src="/api/files/${file.id}/content" loading="lazy" alt="${file.filename}">
+                <img src="/api/files/${file.id}/content?v=${new Date(file.updated_at || file.created_at).getTime()}" loading="lazy" alt="${file.filename}">
             </div>
             <div class="meta">
                 <div class="meta-header">
                     <div class="filename" title="${file.filename}">${file.filename}</div>
                     <div class="card-actions">
+                         <button class="btn-icon" onclick="triggerUpdateFile(${file.id}, event)" title="Update Content">
+                            <span class="material-symbols-outlined">upload_file</span>
+                        </button>
                          <button class="btn-icon" onclick="renameFile(${file.id}, '${file.filename}', event)" title="Rename">
                             <span class="material-symbols-outlined">edit</span>
                         </button>
@@ -239,6 +242,65 @@ function renderFiles() {
         grid.appendChild(card);
     });
 }
+
+window.triggerUpdateFile = (id, e) => {
+    e.stopPropagation();
+
+    // Create hidden input if it doesn't exist
+    let input = document.getElementById('update-file-input');
+    if (!input) {
+        input = document.createElement('input');
+        input.type = 'file';
+        input.id = 'update-file-input';
+        input.accept = '.svg';
+        input.style.display = 'none';
+        document.body.appendChild(input);
+    }
+
+    // Reset value
+    input.value = '';
+
+    // Set handler
+    input.onchange = async () => {
+        const file = input.files[0];
+        if (!file) return;
+
+        if (file.type !== 'image/svg+xml' && !file.name.endsWith('.svg')) {
+            alert('Only SVG files are allowed.');
+            return;
+        }
+
+        if (file.size > 2 * 1024 * 1024) {
+            alert('File size exceeds 2MB limit.');
+            return;
+        }
+
+        if (!confirm(`Overwrite content with "${file.name}"? This cannot be undone.`)) {
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('file', file);
+
+        // Optimistic UI could be added here (e.g. spinner on the button)
+
+        try {
+            const res = await fetch(`/api/files/${id}/content`, {
+                method: 'PUT',
+                body: formData
+            });
+
+            if (!res.ok) throw new Error(await res.text());
+
+            // Refresh list to show new size/dims and update preview image
+            await loadFiles();
+        } catch (e) {
+            alert('Update failed: ' + e.message);
+        }
+    };
+
+    input.click();
+};
 
 window.renameFile = async (id, oldName, e) => {
     e.stopPropagation();

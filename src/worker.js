@@ -306,6 +306,60 @@ export default {
             return new Response(object.body, { headers });
         }
 
+        // UPDATE FILE CONTENT
+        if (path.startsWith('/api/files/') && path.endsWith('/content') && method === 'PUT') {
+            const id = path.split('/api/files/')[1].split('/')[0];
+            const fileRec = await db.getFileById(id);
+
+            if (!fileRec || fileRec.user_id !== userId) {
+                return new Response('Not Found', { status: 404 });
+            }
+
+            const formData = await request.formData();
+            const file = formData.get('file');
+
+            if (!file || !(file instanceof File)) {
+                return new Response('No file provided', { status: 400 });
+            }
+
+            if (!file.name.endsWith('.svg') || file.type !== 'image/svg+xml') {
+                return new Response('Only SVG allowed', { status: 400 });
+            }
+
+            if (file.size > 2 * 1024 * 1024) {
+                return new Response('File too large (>2MB)', { status: 400 });
+            }
+
+            // Check Quota
+            const usage = await db.getUserUsage(userId);
+            const userObj = await db.getUserById(userId);
+            const limit = userObj.storage_limit || 104857600;
+
+            // Note: usage.total_used includes the old file size.
+            // New Total = (Current Total - Old File Size) + New File Size
+            const projectedUsage = (usage.total_used - fileRec.size) + file.size;
+
+            if (projectedUsage > limit) {
+                return new Response('Storage quota exceeded', { status: 403 });
+            }
+
+            // Parse metadata
+            const text = await file.text();
+            const widthMatch = text.match(/width="([^"]+)"/);
+            const heightMatch = text.match(/height="([^"]+)"/);
+            const width = widthMatch ? parseInt(widthMatch[1]) : 0;
+            const height = heightMatch ? parseInt(heightMatch[1]) : 0;
+
+            // Overwrite R2 (using existing r2_key)
+            await bucket.put(userId, fileRec.r2_key, text, {
+                httpMetadata: { contentType: 'image/svg+xml' }
+            });
+
+            // Update DB
+            const updated = await db.updateFileContent(id, file.size, width, height);
+            return Response.json(updated);
+        }
+
         // PATCH FILE (Rename)
         if (path.startsWith('/api/files/') && method === 'PATCH') {
             const id = path.split('/api/files/')[1];
